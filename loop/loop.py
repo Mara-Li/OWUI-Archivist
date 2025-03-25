@@ -12,13 +12,13 @@ from datetime import datetime
 MEMORY_DIR = os.getenv("MEMORY_DIR", "/app/memories")
 COLLECTIONS_FILE = os.getenv("COLLECTIONS_FILE", "/app/model_collections.json")
 DEFAULT_KNOWLEDGE_ID = os.getenv("DEFAULT_KNOWLEDGE_ID", None)
-WEBUI_API = os.getenv("WEBUI_API", "http://aria-open-webui:3000")
+WEBUI_API = os.getenv("WEBUI_API", "http://localhost:8000")
 TOKEN = os.getenv("WEBUI_TOKEN")
 FILENAME_TEMPLATE = os.getenv("FILENAME_TEMPLATE", "conversation_{timestamp}.txt")
 TIMELOOP = os.getenv("TIMELOOP", 10)
 
 # Constants
-ARCHIVE_DIR = os.getenv("ARCHIVE_DIR", os.path.join(MEMORY_DIR, "archived"))
+ARCHIVE_DIR = os.path.join(MEMORY_DIR, "archived")
 LOG_DIR = os.path.join(MEMORY_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "archivist.log")
 
@@ -183,7 +183,10 @@ def loop():
                 fpath = os.path.join(MEMORY_DIR, fname)
                 log(f"Processing {fname}")
                 model = extract_model_from_file(fpath) or "default"
-                collection_id = model_collections.get(model, DEFAULT_KNOWLEDGE_ID)
+                collection_id = model_collections.get(model) or model_collections.get("default")
+                if not collection_id:
+                    collection_id = DEFAULT_KNOWLEDGE_ID
+                    log(f"⚠️ No collection found for model {model}, using default knowledge {collection_id}")
 
                 file_id = upload_file(fpath, model)
                 if file_id:
