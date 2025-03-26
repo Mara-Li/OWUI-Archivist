@@ -4,7 +4,7 @@ import json
 import re
 from logger import log
 
-from config import COLLECTIONS_FILE
+from config import COLLECTIONS_FILE, LAST_ARCHIVED
 
 Info = namedtuple("Info", ["model", "user"])
 
@@ -16,6 +16,18 @@ def read_file_content(path):
     except Exception as e:
         log(f"Error reading file content: {e}")
     return ""
+
+
+def read_last_archived():
+    try:
+        with open(LAST_ARCHIVED, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        log(f"File not found: {LAST_ARCHIVED}")
+        return ""
+    except Exception as e:
+        log(f"Failed to read last_archived: {e}")
+        return ""
 
 
 def extract_from_file(file_path):

@@ -29,16 +29,41 @@ class Pipeline:
     async def on_shutdown(self):
         self._print("[ConversationSaver] on_shutdown")
 
+    def write_last_archived(self, chat_id: str):
+        try:
+            with open(os.path.join(self.valves.save_path, "ongoing_conversation_id.txt"), "w", encoding="utf-8") as f:
+                f.write(chat_id)
+        except FileNotFoundError:
+            self._print(f"[ConversationSaver] File not found: {self.valves.save_path}")
+        except Exception as e:
+            self._print(f"[ConversationSaver] Failed to write last_archived: {e}")
+
+    def read_last_archived(self) -> str:
+        try:
+            with open(os.path.join(self.valves.save_path, "ongoing_conversation_id.txt"), "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            self._print(f"[ConversationSaver] File not found: {self.valves.save_path}")
+            return ""
+        except Exception as e:
+            self._print(f"[ConversationSaver] Failed to read last_archived: {e}")
+            return ""
+
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
         text = re.sub(r"<source_context>.*?</source_context>", "", text, flags=re.DOTALL)
         text = re.sub(r"<source>.*?</source>", "", text, flags=re.DOTALL)
-        text = re.sub("[source_id:.*]", "", text)
+        text = re.sub(r"\[source_id:.*\]", "", text)
+        text = re.sub(r"\[\d+\]", "", text)
         return text.strip()
 
     async def outlet(self, body: dict, user: Optional[dict] = None) -> dict:
         self._print("[ConversationSaver] outlet called")
+        old_chat_id = self.read_last_archived()
         conversation_id = body.get("chat_id") or "unknown"
+        if conversation_id == old_chat_id:
+            self._print("[ConversationSaver] Already archived")
+            return body
         model = body.get("model") or "unknown"
         messages = body.get("messages", [])
         username = (user.get("name") or user.get("email") or "User") if user else "User"
@@ -68,7 +93,7 @@ class Pipeline:
                         continue
                     speaker = username if role == "user" else role.capitalize()
                     f.write(f"**{speaker}**: {content}\n\n")
-
+            self.write_last_archived(conversation_id)
             self._print(f"[ConversationSaver] Saved to {filename}")
         except Exception as e:
             self._print(f"[ConversationSaver] Failed to write file: {e}")
