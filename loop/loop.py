@@ -8,20 +8,14 @@ import shutil
 import json
 from datetime import datetime
 
-# Environment variables
-MEMORY_DIR = os.getenv("MEMORY_DIR", "/app/memories")
-COLLECTIONS_FILE = os.getenv("COLLECTIONS_FILE", "/app/model_collections.json")
-DEFAULT_KNOWLEDGE_ID = os.getenv("DEFAULT_KNOWLEDGE_ID", None)
-WEBUI_API = os.getenv("WEBUI_API", "http://localhost:8000")
-TOKEN = os.getenv("WEBUI_TOKEN")
-FILENAME_TEMPLATE = os.getenv("FILENAME_TEMPLATE", "conversation_{timestamp}.txt")
-TIMELOOP = os.getenv("TIMELOOP", 10)
-
-# Constants
+MEMORY_DIR = "/app/memories"
 ARCHIVE_DIR = os.path.join(MEMORY_DIR, "archived")
 LOG_DIR = os.path.join(MEMORY_DIR, "logs")
 LOG_FILE = os.path.join(LOG_DIR, "archivist.log")
-
+COLLECTIONS_FILE = "/app/model_collections.json"
+DEFAULT_KNOWLEDGE_ID = "64eda376-4f8d-43df-9585-2e0f93d5ebde"
+WEBUI_API = os.getenv("WEBUI_API", "http://aria-open-webui:3000")
+TOKEN = os.getenv("WEBUI_TOKEN")
 
 if not TOKEN:
     print("[Archivist] ❌ WEBUI_TOKEN is missing. Exiting.")
@@ -36,21 +30,6 @@ os.makedirs(ARCHIVE_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
 HISTORY_LOG = os.path.join(LOG_DIR, "archivist_history.log")
-
-def generate_filename(model="default"):
-    '''
-    Allow to generate a filename based on the template.
-    Value allowed:
-    - `{timestamp}` : current timestamp
-    - `{date}` 
-    - `{time}`
-    - `{model}` : model used
-    default: conversation_{timestamp}.txt
-    '''
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    date = datetime.now().strftime("%Y-%m-%d")
-    time = datetime.now().strftime("%H:%M:%S")
-    return FILENAME_TEMPLATE.format(timestamp=timestamp, date=date, time=time, model=model)
 
 def log(msg):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -73,10 +52,9 @@ def load_model_collections():
         log(f"Failed to load model collections: {e}")
         return {}
 
-def upload_file(file_path, model="default"):
-    filename = generate_filename(model)
+def upload_file(file_path):
     with open(file_path, 'rb') as f:
-        files = {'file': (filename, f, 'text/plain; charset=utf-8')}
+        files = {'file': (os.path.basename(file_path), f, 'text/plain; charset=utf-8')}
         res = requests.post(f"{WEBUI_API}/api/v1/files/", headers=HEADERS, files=files)
     if res.status_code == 200:
         try:
@@ -123,6 +101,20 @@ def update_file_content(file_id, content):
         log(f"Error updating file content: {e}")
     return False
 
+def reindex_file_in_knowledge(knowledge_id, file_id):
+    try:
+        res = requests.post(
+            f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/update",
+            headers={**HEADERS, "Content-Type": "application/json"},
+            json={"file_id": file_id}
+        )
+        if res.status_code != 200:
+            log(f"Failed to reindex file {file_id}: {res.status_code} - {res.text}")
+        return res.status_code == 200
+    except Exception as e:
+        log(f"Error reindexing file in knowledge: {e}")
+    return False
+
 def delete_file(file_id):
     try:
         res = requests.delete(f"{WEBUI_API}/api/v1/files/{file_id}", headers=HEADERS)
@@ -141,12 +133,13 @@ def add_to_knowledge(file_id, knowledge_id, filename, source_path):
         if existing_file_id:
             content = read_file_content(source_path)
             if update_file_content(existing_file_id, content):
-                log_history("updated", filename, knowledge_id)
-                return True
+                if reindex_file_in_knowledge(knowledge_id, existing_file_id):
+                    log_history("updated", filename, knowledge_id)
+                    return True
+                else:
+                    log(f"⚠️ Reindex failed for updated file: {filename}")
             else:
-                log(f"⚠️ Failed to update content for file {filename}, deleting and re-uploading instead")
-                if delete_file(existing_file_id):
-                    log_history("replaced", filename, knowledge_id)
+                log(f"⚠️ Failed to update content for file {filename}")
         else:
             log(f"⚠️ No file ID found for existing file: {filename} in knowledge {knowledge_id}")
 
@@ -167,8 +160,8 @@ def extract_model_from_file(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             for line in f:
-                if line.startswith("**Model:**"):
-                    return line.split("**Model:**")[-1].strip()
+                if line.startswith("**Model utilisé:**"):
+                    return line.split("**Model utilisé:**")[-1].strip()
     except Exception as e:
         log(f"Failed to read model from {file_path}: {e}")
     return None
@@ -186,9 +179,8 @@ def loop():
                 collection_id = model_collections.get(model) or model_collections.get("default")
                 if not collection_id:
                     collection_id = DEFAULT_KNOWLEDGE_ID
-                    log(f"⚠️ No collection found for model {model}, using default knowledge {collection_id}")
 
-                file_id = upload_file(fpath, model)
+                file_id = upload_file(fpath)
                 if file_id:
                     if add_to_knowledge(file_id, collection_id, fname, fpath):
                         log(f"Archived {fname} to {collection_id}")
@@ -201,7 +193,7 @@ def loop():
         except Exception as e:
             log(f"Error: {e}")
 
-        time.sleep(TIMELOOP)
+        time.sleep(10)
 
 if __name__ == "__main__":
     try:
