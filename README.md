@@ -36,45 +36,69 @@ cd archivist
 ### 3. Start with docker compose
 ```yaml
 services:
-  archivist:
-    build:
-      context: ./archivist
-      dockerfile: Dockerfile
-    container_name: aria-archivist
+  open-webui:
+    image: 'ghcr.io/open-webui/open-webui:main' #or cuda
     volumes:
-      - './memories:/app/memories'
-      - './archivist/model_collections.json:/app/model_collections.json'
-    environment:
-      - WEBUI_API=http://open-webui:8080
-      - WEBUI_TOKEN=sk-727cbe92004c4c1baff4aaee3e7e4a0b
-      - MEMORY_DIR=/app/memories
-      - COLLECTIONS_FILE=/app/model_collections.json
-      - FILENAME_TEMPLATE=Conversation du {date:%d-%m-%Y}.md
-      - DEFAULT_KNOWLEDGE_ID=fb2f8415-3936-4bf9-aebc-846365cd92b5
-    networks:
-      - aria-net
+      - './open-webui:/app/backend/data'
+      - './memories:/app/memories' #mandatory!
     depends_on:
+      - ollama
+    networks:
       - open-webui
     restart: unless-stopped
-  pipelines:
-    image: 'ghcr.io/open-webui/pipelines:main'
-    volumes:
-      - './pipelines:/app/pipelines'
-      - './memories:/app/memories'
-    restart: unless-stopped
-    networks:
-      - aria-net
-    container_name: aria-pipelines
-    depends_on:
-      - open-webui
     ports:
-      - '9099:9099'
-    environment:
-      - PIPELINES_REQUIREMENTS_PATH=/app/pipelines/requirements.txt
-      - PIPELINES_API_KEY=0p3n-w3bu!
+      - '8080:8080'
+    container_name: open-webui
+  ollama:
+    image: 'ollama/ollama:latest'
+    container_name: ollama
+    volumes:
+      - '/d/ollama/models:/root/.ollama'
+    networks:
+      - open-webui
+    restart: unless-stopped
+    ports:
+      - '11434:11434'
+    archivist:
+      build:
+        context: ./archivist
+        dockerfile: Dockerfile
+      container_name: archivist
+      volumes:
+        - './memories:/app/memories'
+        - './archivist/model_collections.json:/app/model_collections.json'
+      environment:
+        - 'WEBUI_API=http://open-webui:8080'
+        - WEBUI_TOKEN=#ADDYOURAPITOKENHERE!!!!
+        - MEMORY_DIR=/app/memories
+        - COLLECTIONS_FILE=/app/model_collections.json
+        - 'FILENAME_TEMPLATE=Conversation_{date}.md'
+        - DEFAULT_KNOWLEDGE_ID=fb2f8415-3936-4bf9-aebc-846365cd92b5
+      networks:
+        - open-webui
+      depends_on:
+        - open-webui
+      restart: unless-stopped
+    pipelines:
+      image: 'ghcr.io/open-webui/pipelines:main'
+      volumes:
+        - './pipelines:/app/pipelines'
+        - './memories:/app/memories' #mandatory!!
+      restart: unless-stopped
+      networks:
+        - open-webui
+      container_name: pipelines
+      depends_on:
+        - open-webui
+      ports:
+        - '9099:9099'
+      environment:
+        - PIPELINES_REQUIREMENTS_PATH=/app/pipelines/requirements.txt
+        - PIPELINES_API_KEY=0p3n-w3bu!
 networks:
   open-webui:
     driver: bridge
+
 
 ```
 
