@@ -21,13 +21,13 @@ class Pipeline:
 
     def _print(self, *msg: object):
         if self.valves.debug:
-            print(f"[ConversationSaver]", *msg)
+            print("[ConversationSaver]", *msg)
     
     async def on_startup(self):
-        self._print(f"[ConversationSaver] on_startup")
+        self._print("[ConversationSaver] on_startup")
 
     async def on_shutdown(self):
-        self._print(f"[ConversationSaver] on_shutdown")
+        self._print("[ConversationSaver] on_shutdown")
 
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
@@ -55,6 +55,7 @@ class Pipeline:
                 f.write(f"# Conversation ID: {conversation_id}\n")
                 f.write(f"**Date:** {timestamp}\n")
                 f.write(f"**Model:** {model}\n")
+                f.write(f"**User:** {username}\n")
                 f.write("\n---\n")
                 f.write(f"\n{intro}\n\n")
 

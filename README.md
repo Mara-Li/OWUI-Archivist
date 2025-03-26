@@ -108,13 +108,16 @@ You can edit the environment variable to customize the loop behavior:
 
 #### Filename
 
-Allow to generate a filename based on the template.
-Value allowed:
-    - `{timestamp}` : current timestamp
-    - `{date}` 
-    - `{time}`
-    - `{model}` : model used
-default: conversation_{timestamp}.txt
+Generate a filename based on the template.
+  Allowed value:
+  - `{model}`: the model used in the conversation
+  - `{date}`: the current date
+  - `{time}`: the current time
+  - `{datetime}`: the current datetime (Format: YYYY-MM-DD_HH-MM)
+  - `{user}`: the user name
+  For `{date}`, `{time}` and `{datetime}`, you can switch the format with the following syntax:
+  `{date:%d-%m-%Y}`
+default: `conversation_{datetime}.txt`
 
 ### Pipeline
 
@@ -123,5 +126,7 @@ In the **Pipeline** part of the Open Web UI admin panel, you can choose `convers
   Should be the same as the `MEMORY_DIR` in the loop
 - Archive path: `/app/memories/archived/`
   Should be the same as the `ARCHIVE_DIR` in the loop
-- Collection models: A json that should be the same as in your `model_collections.json` file!
 - Intro template: A template for the introduction of the file, after mandatory information. You can use `{user}` and `{model}` to replace by the user and the model used.
+
+> [!WARNING]
+> The path should be the path in your docker instance, not in your computer.
