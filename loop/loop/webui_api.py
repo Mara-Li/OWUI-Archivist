@@ -5,6 +5,15 @@ import requests
 from config import HEADERS, WEBUI_API
 
 
+def is_webui_reachable():
+    try:
+        res = requests.get(f"{WEBUI_API}/api/v1/health", timeout=5)
+        return res.status_code == 200
+    except Exception as e:
+        log(f"[Delete archive] 🚫 WebUI not reachable: {e}")
+        return False
+
+
 def get_chat_info(chat_id: str):
     try:
         res = requests.get(f"{WEBUI_API}/api/v1/chats/{chat_id}", headers=HEADERS)
@@ -34,7 +43,11 @@ def get_existing_file(knowledge_id, filename):
 
 def update_file_content(file_id, content):
     try:
-        res = requests.post(f"{WEBUI_API}/api/v1/files/{file_id}/data/content/update", headers={**HEADERS, "Content-Type": "application/json"}, json={"content": content})
+        res = requests.post(
+            f"{WEBUI_API}/api/v1/files/{file_id}/data/content/update",
+            headers={**HEADERS, "Content-Type": "application/json"},
+            json={"content": content},
+        )
         if res.status_code != 200:
             log(f"Failed to update file content: {res.status_code} - {res.text}")
         return res.status_code == 200
@@ -45,7 +58,11 @@ def update_file_content(file_id, content):
 
 def update_file_in_knowledge(knowledge_id, file_id):
     try:
-        res = requests.post(f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/update", headers={**HEADERS, "Content-Type": "application/json"}, json={"file_id": file_id})
+        res = requests.post(
+            f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/update",
+            headers={**HEADERS, "Content-Type": "application/json"},
+            json={"file_id": file_id},
+        )
         if res.status_code != 200:
             log(f"Failed to reindex file {file_id}: {res.status_code} - {res.text}")
         return res.status_code == 200
@@ -87,7 +104,11 @@ def add_to_knowledge(file_id, knowledge_id, filename, source_path):
 
     # fallback to upload + add
     data = {"file_id": file_id}
-    res = requests.post(f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/add", headers={**HEADERS, "Content-Type": "application/json"}, json=data)
+    res = requests.post(
+        f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/add",
+        headers={**HEADERS, "Content-Type": "application/json"},
+        json=data,
+    )
     if res.status_code != 200:
         log(f"Add failed: {res.status_code} - {res.text}")
     else:
@@ -96,7 +117,11 @@ def add_to_knowledge(file_id, knowledge_id, filename, source_path):
 
 
 def remove_from_knowledge(data, knowledge_id, filename):
-    res = requests.post(f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/remove", headers={**HEADERS, "Content-Type": "application/json"}, json=data)
+    res = requests.post(
+        f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/remove",
+        headers={**HEADERS, "Content-Type": "application/json"},
+        json=data,
+    )
     if res.status_code != 200:
         log(f"Remove failed: {res.status_code} - {res.text}")
     else:

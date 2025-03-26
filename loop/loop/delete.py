@@ -1,7 +1,7 @@
 import os
 import time
 
-from webui_api import delete_file, get_chat_info, get_existing_file, remove_from_knowledge
+from webui_api import delete_file, get_chat_info, get_existing_file, is_webui_reachable, remove_from_knowledge
 from config import ARCHIVE_DIR, DEFAULT_KNOWLEDGE_ID, FILENAME_TEMPLATE, TIMELOOP
 from file_utils import extract_from_file, generate_filename, load_model_collections
 from logger import log
@@ -11,6 +11,10 @@ def delete_archived():
     log("[Delete archive] ✅ Cleaning up archived files")
     model_collections = load_model_collections()
     while True:
+        if not is_webui_reachable():
+            log("[Delete archive] 🚫 WebUI not reachable. Skip cleaning up")
+            time.sleep(TIMELOOP)
+            continue
         try:
             files = [f for f in os.listdir(ARCHIVE_DIR) if os.path.isfile(os.path.join(ARCHIVE_DIR, f))]
             for fname in files:

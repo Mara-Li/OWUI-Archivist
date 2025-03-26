@@ -1,7 +1,7 @@
 import os
 import shutil
 import time
-from webui_api import add_to_knowledge, get_chat_info, upload_file
+from webui_api import add_to_knowledge, get_chat_info, is_webui_reachable, upload_file
 from config import ARCHIVE_DIR, DEFAULT_KNOWLEDGE_ID, FILENAME_TEMPLATE, MEMORY_DIR, TIMELOOP
 from file_utils import extract_from_file, generate_filename, load_model_collections, read_last_archived
 from logger import log
@@ -12,6 +12,10 @@ def run_loop():
     model_collections = load_model_collections()
     last_archived = read_last_archived()
     while True:
+        if not is_webui_reachable():
+            log("[Archivist] 🚫 WebUI not reachable. Skip updating.")
+            time.sleep(TIMELOOP)
+            continue
         try:
             files = [
                 f
