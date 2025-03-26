@@ -1,12 +1,11 @@
 # archivist_loop.py
-print("[Archivist] Booting script...")
-
 import os
 import time
 import requests
 import shutil
 import json
 from datetime import datetime
+print("[Archivist] Booting script...")
 
 MEMORY_DIR = "/app/memories"
 ARCHIVE_DIR = os.path.join(MEMORY_DIR, "archived")
@@ -171,7 +170,9 @@ def loop():
     model_collections = load_model_collections()
     while True:
         try:
-            files = [f for f in os.listdir(MEMORY_DIR) if f.endswith(".txt") and os.path.isfile(os.path.join(MEMORY_DIR, f)) and not f.startswith("last_archived")]
+            files = [f for f in os.listdir(MEMORY_DIR) if f.endswith(".txt") 
+                     and os.path.isfile(os.path.join(MEMORY_DIR, f)) 
+                     and not f.startswith("last_archived")]
             for fname in files:
                 fpath = os.path.join(MEMORY_DIR, fname)
                 log(f"Processing {fname}")
