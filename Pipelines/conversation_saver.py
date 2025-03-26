@@ -4,6 +4,7 @@ from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel
 
+
 class Pipeline:
     class Valves(BaseModel):
         pipelines: List[str] = ["*"]
@@ -18,11 +19,10 @@ class Pipeline:
         self.name = "Conversation Saver Pipeline"
         self.valves = self.Valves()
 
-
     def _print(self, *msg: object):
         if self.valves.debug:
             print("[ConversationSaver]", *msg)
-    
+
     async def on_startup(self):
         self._print("[ConversationSaver] on_startup")
 
@@ -31,9 +31,9 @@ class Pipeline:
 
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
-        text = re.sub(r'<source_context>.*?</source_context>', '', text, flags=re.DOTALL)
-        text = re.sub(r'<source>.*?</source>', '', text, flags=re.DOTALL)
-        text= re.sub("[source_id:.*]", "", text)
+        text = re.sub(r"<source_context>.*?</source_context>", "", text, flags=re.DOTALL)
+        text = re.sub(r"<source>.*?</source>", "", text, flags=re.DOTALL)
+        text = re.sub("[source_id:.*]", "", text)
         return text.strip()
 
     async def outlet(self, body: dict, user: Optional[dict] = None) -> dict:
@@ -42,23 +42,23 @@ class Pipeline:
         model = body.get("model") or "unknown"
         messages = body.get("messages", [])
         username = (user.get("name") or user.get("email") or "User") if user else "User"
-        
+
         if not messages:
             self._print("[ConversationSaver] No messages to save")
             return body
 
         os.makedirs(self.valves.save_path, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        filename = os.path.join(self.valves.save_path, f"{conversation_id}.txt")
+        filename = os.path.join(self.valves.save_path, f"{conversation_id}.md")
         intro = self.valves.intro_template.format(user=username, model=model)
         try:
             with open(filename, "w", encoding="utf-8") as f:
-                #frontmatter, usefull if used with Obsidian for example
+                # frontmatter, usefull if used with Obsidian for example
                 f.write("---\n")
-                f.write(f"conversation_id: \"{conversation_id}\"\n")
-                f.write(f"date: \"{timestamp}\"\n")
-                f.write(f"model: \"{model}\"\n")
-                f.write(f"user: \"{username}\"\n")
+                f.write(f'conversation_id: "{conversation_id}"\n')
+                f.write(f'date: "{timestamp}"\n')
+                f.write(f'model: "{model}"\n')
+                f.write(f'user: "{username}"\n')
                 f.write(f"---\n{intro}\n\n")
 
                 for msg in messages:
