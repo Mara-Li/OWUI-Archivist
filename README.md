@@ -11,12 +11,26 @@
 
 ## 🚀 Features
 
-- Saves conversations to `.txt` files
-- Automatically cleans up `<source_context>` or `<source>` blocks
+- Saves conversations to files
+- Automatically cleans up `<source_context>` or `<source>` blocks (and also citation between `\[` and `\]`)
 - Maps conversations to the correct knowledge collection based on the model used
 - Updates existing archived files instead of duplicating
 - Logs activity and history in `archivist.log` and `archivist_history.log`
+- Auto-delete the conversation from knowledge (and files) when the conversation is deleted from Open WebUI
 
+---
+
+## 🗜️ How it works
+
+1. **Pipeline**:
+   - The pipeline saves the conversation to a file in the `memories` directory named `{conversation_id}.{ext}`
+   - It notes the ongoing conversation id into a `ongoing_conversation.txt` file (in the `memories` directory)
+2. **Loop**:
+   - The loop reads the `ongoing_conversation.txt` file to get the conversation id
+   - If the conversation in the folder is not the same id as the one in the `ongoing_conversation.txt`, it will:
+      - Move the file in the `archived` folder
+      - Upload the files and save it in the knowledge base.
+    - If the conversation is deleted from Open WebUI, it will delete the file and the knowledge base entry.
 ---
 
 ## 📦 Setup
@@ -102,13 +116,13 @@ networks:
 
 ```
 
-Then launch : `docker compose up -d`
+Then launch : `docker compose up -d --build`
 
 > [!WARNING]
 > Don't forget to connect the Pipeline to the Open WebUI in the admin panel.
 
 ## 📁 Generated files
-- `memories/*.txt` — stored conversations
+- `memories/*.{ext}` — stored conversations
 - `memories/archived/` — already archived files
 - `memories/logs/archivist.log` — real-time logs
 - `memories/logs/archivist_history.log` — persistent archive history
@@ -137,6 +151,9 @@ You can edit the environment variable to customize the loop behavior:
 
 #### Filename
 
+> [!NOTE]
+> Define the file name in the knowledge collection.
+
 Generate a filename based on the template.
   Allowed value:
   - `{model}`: the model used in the conversation
@@ -144,9 +161,10 @@ Generate a filename based on the template.
   - `{time}`: the current time
   - `{datetime}`: the current datetime (Format: YYYY-MM-DD_HH-MM)
   - `{user}`: the user name
-  For `{date}`, `{time}` and `{datetime}`, you can switch the format with the following syntax:
+  For `{date}`, `{time}` and `{datetime}`, you can change the format with the following syntax:
   `{date:%d-%m-%Y}`
-default: `conversation_{datetime}.txt`
+  You need to use the [python datetime format](https://strftime.org/)
+<ins>default</ins>: `conversation_{datetime}.txt`
 
 ### Pipeline
 
@@ -155,7 +173,13 @@ In the **Pipeline** part of the Open Web UI admin panel, you can choose `convers
   Should be the same as the `MEMORY_DIR` in the loop
 - Archive path: `/app/memories/archived/`
   Should be the same as the `ARCHIVE_DIR` in the loop
-- Intro template: A template for the introduction of the file, after mandatory information. You can use `{user}` and `{model}` to replace by the user and the model used.
 
-> [!WARNING]
+> [!IMPORTANT]
 > The path should be the path in your docker instance, not in your computer.
+
+- Intro template: A template for the introduction of the file, after mandatory information. You can use `{user}` and `{model}` to replace by the user and the model used.
+- Debug: For logging purpose in the docker logs
+- Extension : Choose between `txt` and `md` for the file extension.
+
+> [!CAUTION]
+> The extension should be the same as set in the `FILENAME_TEMPLATE` in the loop.

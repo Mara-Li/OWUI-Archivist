@@ -1,18 +1,26 @@
 import os
 import re
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Pipeline:
     class Valves(BaseModel):
         pipelines: List[str] = ["*"]
         priority: int = 0
-        save_path: str = "/app/memories"
-        archive_path: str = "/app/memories/archived"
-        intro_template: str = "Ceci est l'archive d'une conversation entre {user} avec le modèle **{model}**."
-        debug: bool = False
+        save_path: str = Field(default="/app/memories", description="Path to save the conversation files")
+        archive_path: str = Field(
+            default="/app/memories/archived", description="Path to save the archived conversation files"
+        )
+        intro_template: str = Field(
+            default="Conversation with {user} using model {model}", description="Template for the conversation intro"
+        )
+        debug: bool = Field(default=False, description="Activate debug mode")
+        extension: Literal["md", "txt"] = Field(
+            default="md",
+            description="File extension for the conversation files. Support any text format file (txt, md…)",
+        )
 
     def __init__(self):
         self.type = "filter"
@@ -74,7 +82,7 @@ class Pipeline:
 
         os.makedirs(self.valves.save_path, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        filename = os.path.join(self.valves.save_path, f"{conversation_id}.md")
+        filename = os.path.join(self.valves.save_path, f"{conversation_id}.{self.valves.extension}")
         intro = self.valves.intro_template.format(user=username, model=model)
         try:
             with open(filename, "w", encoding="utf-8") as f:
