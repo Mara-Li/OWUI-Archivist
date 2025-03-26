@@ -1,5 +1,3 @@
-# ✅ conversation_saver_pipeline.py (Pipeline compatible avec Open WebUI)
-import json
 import os
 import re
 from typing import Optional, List
@@ -12,23 +10,24 @@ class Pipeline:
         priority: int = 0
         save_path: str = "/app/memories"
         archive_path: str = "/app/memories/archived"
-        collections_models: str = json.dumps({
-            "default": "fb2f8415-3936-4bf9-aebc-846365cd92b5"
-        })
-        intro_template: str = "This is a conversation archive between {user} with **{model}**."
-        
+        intro_template: str = "Ceci est l'archive d'une conversation entre {user} avec le modèle **{model}**."
+        debug: bool = False
 
     def __init__(self):
         self.type = "filter"
         self.name = "Conversation Saver Pipeline"
         self.valves = self.Valves()
-        self.collections = json.loads(self.valves.collections_models)
 
+
+    def _print(self, *msg: object):
+        if self.valves.debug:
+            print(f"[ConversationSaver]", *msg)
+    
     async def on_startup(self):
-        print(f"[ConversationSaver] on_startup")
+        self._print(f"[ConversationSaver] on_startup")
 
     async def on_shutdown(self):
-        print(f"[ConversationSaver] on_shutdown")
+        self._print(f"[ConversationSaver] on_shutdown")
 
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
@@ -36,18 +35,15 @@ class Pipeline:
         text = re.sub(r'<source>.*?</source>', '', text, flags=re.DOTALL)
         return text.strip()
 
-    def get_collection_for_model(self, model: str) -> str:
-        return self.collections.get(model, self.collections.get("default"))
-
     async def outlet(self, body: dict, user: Optional[dict] = None) -> dict:
-        print("[ConversationSaver] outlet called")
+        self._print("[ConversationSaver] outlet called")
         conversation_id = body.get("chat_id") or "unknown"
         model = body.get("model") or "unknown"
         messages = body.get("messages", [])
         username = (user.get("name") or user.get("email") or "User") if user else "User"
         
         if not messages:
-            print("[ConversationSaver] No messages to save")
+            self._print("[ConversationSaver] No messages to save")
             return body
 
         os.makedirs(self.valves.save_path, exist_ok=True)
@@ -70,7 +66,7 @@ class Pipeline:
                     speaker = username if role == "user" else role.capitalize()
                     f.write(f"**{speaker}**: {content}\n\n")
 
-            print(f"[ConversationSaver] Saved to {filename}")
+            self._print(f"[ConversationSaver] Saved to {filename}")
         except Exception as e:
-            print(f"[ConversationSaver] Failed to write file: {e}")
+            self._print(f"[ConversationSaver] Failed to write file: {e}")
         return body
