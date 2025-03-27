@@ -1,3 +1,4 @@
+from pathlib import Path
 from file_utils import get_uid, load_user_api, read_file_content
 from logger import log, log_history
 import requests
@@ -40,7 +41,7 @@ def get_chat_info(chat_id: str):
     return None
 
 
-def get_existing_file(knowledge_id, filename):
+def get_existing_file(knowledge_id: str, filename: str):
     try:
         res = requests.get(f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}", headers=HEADERS)
         if res.status_code == 200:
@@ -55,7 +56,7 @@ def get_existing_file(knowledge_id, filename):
     return None
 
 
-def update_file_content(file_id, content):
+def update_file_content(file_id: str, content: str):
     try:
         res = requests.post(
             f"{WEBUI_API}/api/v1/files/{file_id}/data/content/update",
@@ -70,7 +71,7 @@ def update_file_content(file_id, content):
     return False
 
 
-def update_file_in_knowledge(knowledge_id, file_id):
+def update_file_in_knowledge(knowledge_id: str, file_id: str):
     try:
         res = requests.post(
             f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/update",
@@ -85,7 +86,7 @@ def update_file_in_knowledge(knowledge_id, file_id):
     return False
 
 
-def delete_file(file_id):
+def delete_file(file_id: str):
     try:
         res = requests.delete(f"{WEBUI_API}/api/v1/files/{file_id}", headers=HEADERS)
         if res.status_code != 200:
@@ -96,7 +97,7 @@ def delete_file(file_id):
     return False
 
 
-def add_to_knowledge(file_id, knowledge_id, filename, source_path):
+def add_to_knowledge(file_id: str, knowledge_id: str, filename: str, source_path: Path):
     existing_file = get_existing_file(knowledge_id, filename)
     if existing_file:
         log(f"File already in knowledge, updating content: {filename}")
@@ -130,7 +131,7 @@ def add_to_knowledge(file_id, knowledge_id, filename, source_path):
     return res.status_code == 200
 
 
-def remove_from_knowledge(data, knowledge_id, filename):
+def remove_from_knowledge(data: dict[str, str], knowledge_id: str, filename: str):
     res = requests.post(
         f"{WEBUI_API}/api/v1/knowledge/{knowledge_id}/file/remove",
         headers={**HEADERS, "Content-Type": "application/json"},
@@ -143,7 +144,7 @@ def remove_from_knowledge(data, knowledge_id, filename):
     return res.status_code == 200
 
 
-def upload_file(file_path: str, model: str, user: str, filename: str):
+def upload_file(file_path: Path, filename: str):
     with open(file_path, "rb") as f:
         files = {"file": (filename, f, "text/plain; charset=utf-8")}
         res = requests.post(f"{WEBUI_API}/api/v1/files/", headers=HEADERS, files=files)

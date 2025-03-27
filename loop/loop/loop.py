@@ -1,4 +1,3 @@
-import os
 import shutil
 import time
 from webui_api import add_to_knowledge, get_chat_info, is_webui_reachable, upload_file
@@ -18,13 +17,11 @@ def run_loop():
             continue
         try:
             files = [
-                f
-                for f in os.listdir(MEMORY_DIR)
-                if os.path.isfile(os.path.join(MEMORY_DIR, f)) and not f.startswith("ongoing_conversation_id")
+                f for f in MEMORY_DIR.iterdir() if f.is_file() and not f.name.startswith("ongoing_conversation_id")
             ]
-            for fname in files:
-                fpath = os.path.join(MEMORY_DIR, fname)
-                fbasename = ".".join(fname.split(".")[:-1])
+            for fpath in files:
+                fname = fpath.name
+                fbasename = fpath.stem
                 if fbasename in last_archived:
                     log(f"⏭️ Skipping active conversation: {fbasename}")
                     continue
@@ -38,9 +35,9 @@ def run_loop():
                     log(f"Chat info not found for {fname}")
                     continue
                 if not collection_id:
-                    collection_id = DEFAULT_KNOWLEDGE_ID
+                    collection_id = DEFAULT_KNOWLEDGE_ID or "0"
                 file_name: str = generate_filename(FILENAME_TEMPLATE, info.model, info.user, fbasename)
-                file_id = upload_file(fpath, info.model, info.user, filename=file_name)
+                file_id = upload_file(fpath, file_name)
                 if file_id:
                     if add_to_knowledge(file_id, collection_id, file_name, fpath):
                         log(f"Archived {fname} to {collection_id} ({info.model})")

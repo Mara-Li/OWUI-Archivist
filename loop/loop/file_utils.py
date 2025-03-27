@@ -1,7 +1,7 @@
 from collections import namedtuple
 from datetime import datetime
 import json
-import os
+from pathlib import Path
 import random
 import re
 
@@ -13,10 +13,9 @@ from config import ARCHIVE_DIR, ARCHIVE_PER_KNOWLEDGE, COLLECTIONS_FILE, HEADERS
 Info = namedtuple("Info", ["model", "user"])
 
 
-def read_file_content(path):
+def read_file_content(path: Path):
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
+        return path.read_text(encoding="utf-8")
     except Exception as e:
         log(f"Error reading file content: {e}")
     return ""
@@ -25,37 +24,37 @@ def read_file_content(path):
 def get_ongoing_id():
     ids = set()
     try:
-        for fname in os.listdir(ONGOING_DIR):
-            path = os.path.join(ONGOING_DIR, fname)
-            if os.path.isfile(path) and fname.endswith(".txt"):
-                with open(path, "r", encoding="utf-8") as f:
-                    chat_id = f.read().strip()
-                    if chat_id:
-                        ids.add(chat_id)
+        for path in ONGOING_DIR.glob("*.txt"):
+            if path.is_file():
+                chat_id = path.read_text(encoding="utf-8").strip()
+                if chat_id:
+                    ids.add(chat_id)
     except Exception as e:
         log(f"[Ongoing] Failed to list ongoing chat IDs: {e}")
     return ids
 
 
-def extract_from_file(file_path):
+def extract_from_file(file_path: Path) -> Info:
     info = {"model": "default", "user": "User"}
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            frontmatter = "".join(f.readlines()).split("---")[1]
-            for line in frontmatter.split("\n"):
+        content = file_path.read_text(encoding="utf-8")
+        sections = content.split("---")
+        if len(sections) > 1:
+            frontmatter = sections[1]
+            for line in frontmatter.splitlines():
                 for key in ("Model", "User", "Title"):
-                    match = re.search(rf"{key}: \"(.*)\"", line, re.IGNORECASE)
+                    match = re.search(rf'{key}:\s*"([^"]+)"', line, re.IGNORECASE)
                     if match:
                         info[key.lower()] = match.group(1).strip()
     except Exception as e:
-        log(f"Failed to read model from {file_path}: {e}")
+        log(f"Failed to read metadata from {file_path}: {e}")
+
     return Info(**info)
 
 
 def load_user_api():
     try:
-        with open(USERS_API, "r", encoding="utf-8") as f:
-            return list(json.load(f).values())
+        return list(json.loads(USERS_API.read_text(encoding="utf-8")).values())
     except Exception as e:
         log(f"Failed to load user API: {e}")
         return []
@@ -63,14 +62,13 @@ def load_user_api():
 
 def load_model_collections():
     try:
-        with open(COLLECTIONS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        return json.loads(COLLECTIONS_FILE.read_text(encoding="utf-8"))
     except Exception as e:
         log(f"Failed to load model collections: {e}")
         return {}
 
 
-def render_datetime_template(text):
+def render_datetime_template(text: str):
     now = datetime.now()
 
     default_formats = {"date": "%Y-%m-%d", "time": "%H:%M", "datetime": "%Y-%m-%d_%H-%M"}
@@ -135,7 +133,7 @@ def get_knowledge_data(knowledge_id: str):
 
 
 def get_archive_path(fname: str, knowledge_id: str):
-    archive_path = os.path.join(ARCHIVE_DIR, fname)
+    archive_path = Path(ARCHIVE_DIR, fname)
     if ARCHIVE_PER_KNOWLEDGE:
         knowledge_data = get_knowledge_data(knowledge_id)
         if not knowledge_data:
@@ -143,7 +141,8 @@ def get_archive_path(fname: str, knowledge_id: str):
         knowledge_name = knowledge_data.get("name")
         if not knowledge_name:
             raise ValueError(f"Knowledge name not found: {knowledge_id}")
-        archive_path = os.path.join(ARCHIVE_DIR, knowledge_name, fname)
-        if not os.path.exists(os.path.join(ARCHIVE_DIR, knowledge_name)):
-            os.makedirs(os.path.join(ARCHIVE_DIR, knowledge_name))
+        archive_path = Path(ARCHIVE_DIR, knowledge_name, fname)
+        knowledge_path = Path(ARCHIVE_DIR, knowledge_name)
+        if not knowledge_path.exists():
+            knowledge_path.mkdir(parents=True, exist_ok=True)
     return archive_path

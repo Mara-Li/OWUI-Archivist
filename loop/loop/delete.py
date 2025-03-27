@@ -1,5 +1,5 @@
-import os
 import time
+from pathlib import Path
 
 from webui_api import delete_file, get_chat_info, get_existing_file, is_webui_reachable, remove_from_knowledge
 from config import ARCHIVE_DIR, DEFAULT_KNOWLEDGE_ID, FILENAME_TEMPLATE, TIMELOOP
@@ -16,15 +16,15 @@ def delete_archived():
             time.sleep(TIMELOOP)
             continue
         try:
-            files = [f for f in os.listdir(ARCHIVE_DIR) if os.path.isfile(os.path.join(ARCHIVE_DIR, f))]
-            for fname in files:
-                chat_id = ".".join(fname.split(".")[:-1])
+            files = [f for f in Path(ARCHIVE_DIR).rglob("*") if f.is_file()]
+            for fpath in files:
+                fname = fpath.name
+                chat_id = fpath.stem
                 info_chat = get_chat_info(chat_id)
                 if info_chat:
-                    log(f"✅ Chat {fname} exists! Continue...")
+                    # log(f"✅ Chat {fname} exists! Continue...")
                     continue
-                log(f"❌ Chat info not found for {fname} | Delete from knowledge")
-                fpath = os.path.join(ARCHIVE_DIR, fname)
+                log(f"❌ Chat info not found for {fname} | Delete it from knowledge")
                 info = extract_from_file(fpath)
                 collection_id = model_collections.get(info.model) or model_collections.get("default")
                 if not collection_id:
@@ -46,7 +46,7 @@ def delete_archived():
                 else:
                     log(f"File not found in knowledge {collection_id}: {fname}")
                 # remove file from archive as they are not in knowledge or deleted
-                os.remove(fpath)
+                fpath.unlink()
         except Exception as e:
             log(f"Error: {e}")
         time.sleep(TIMELOOP)
