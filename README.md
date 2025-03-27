@@ -160,24 +160,24 @@ docker compose up -d --build
 
 ## ⚙️ Configuration
 
-### 🌀 Archivist Loop – Environment Variables
+### 🌀 Archivist Loop - Environment Variables
 
 You can configure Archivist behavior via environment variables in your Docker setup:
 
-| Variable                | Description                                                              | Default                           |
-| ----------------------- | ------------------------------------------------------------------------ | --------------------------------- |
-| `WEBUI_TOKEN`           | 🔐 Your Open WebUI API token (**required**)                             | *(none)*                          |
-| `WEBUI_API`             | URL of the Open WebUI API                                                | `http://open-webui:8080`          |
-| `DEFAULT_KNOWLEDGE_ID`  | Fallback knowledge ID if no model collection are set                     | *(optional)*                      |
-| `FILENAME_TEMPLATE`     | Template to name the memory files                                        | `conversation_{datetime}.txt`     |
-| `TIMELOOP`              | Time between each cleanup/upload loop (in seconds)                       | `10`                              |
-| `ARCHIVE_PER_KNOWLEDGE` | Store files in subfolders by `knowledge_id` in `/archived/` (true/false) | `false`                           |
-| `MEMORY_DIR`            | Path to the memory folder in the container                               | `/app/memories`                   |
-| `COLLECTIONS_FILE`      | Path to the json containing the collections ids (in the container)       | `/app/model_collections.json`     |
-| `USERS_API`             | Path to the json containing the differents users api                     | (*optional*) `/app/user_api.json` |
+| Variable                | Description                                                                 | Default                           |
+| ----------------------- | --------------------------------------------------------------------------- | --------------------------------- |
+| `WEBUI_TOKEN`           | 🔐 Your Open WebUI API token (**required**), **should be the admin token** | *(none)*                          |
+| `WEBUI_API`             | URL of the Open WebUI API                                                   | `http://open-webui:8080`          |
+| `DEFAULT_KNOWLEDGE_ID`  | Fallback knowledge ID if no model collection are set                        | *(optional)*                      |
+| `FILENAME_TEMPLATE`     | Template to name the memory files                                           | `conversation_{datetime}.txt`     |
+| `TIMELOOP`              | Time between each cleanup/upload loop (in seconds)                          | `10`                              |
+| `ARCHIVE_PER_KNOWLEDGE` | Store files in subfolders by `knowledge_id` in `/archived/` (true/false)    | `false`                           |
+| `MEMORY_DIR`            | Path to the memory folder in the container                                  | `/app/memories`                   |
+| `COLLECTIONS_FILE`      | Path to the json containing the collections ids (in the container)          | `/app/model_collections.json`     |
+| `USERS_API`             | Path to the json containing the differents users api                        | (*optional*) `/app/user_api.json` |
 
 
-### 🧠 Open WebUI Pipeline – Customizable Settings
+### 🧠 Open WebUI Pipeline - Customizable Settings
 
 Editable directly from the **Open WebUI admin panel**, under `conversation_saver_pipeline.py`:
 
