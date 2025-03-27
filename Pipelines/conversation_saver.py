@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 import re
 from typing import Literal, Optional, List
 from datetime import datetime
@@ -29,14 +29,14 @@ class Pipeline:
         )
 
     def delete_archived(self, chat_id: str, model_name: str):
-        archived_path = os.path.join(self.valves.archive_path, f"{chat_id}.{self.valves.extension}")
+        archived_path = Path(self.valves.archive_path, f"{chat_id}.{self.valves.extension}")
         if self.valves.archive_per_knowledge and self.valves.knowledges:
             knowledges = json.loads(self.valves.knowledges)
             knowledge_name = knowledges.get(model_name) or knowledges.get("default") or model_name
-            archived_path = os.path.join(self.valves.archive_path, knowledge_name, f"{chat_id}.{self.valves.extension}")
-        if os.path.exists(archived_path):
+            archived_path = Path(self.valves.archive_path, knowledge_name, f"{chat_id}.{self.valves.extension}")
+        if archived_path.exists():
             try:
-                os.remove(archived_path)
+                archived_path.unlink()
                 self._print(f"[ConversationSaver] Deleted {archived_path}")
             except Exception as e:
                 self._print(f"[ConversationSaver] Failed to delete archived: {e}")
@@ -59,7 +59,7 @@ class Pipeline:
     def write_last_archived(self, chat_id: str, user_id: str = ""):
         try:
             with open(
-                os.path.join(self.valves.save_path, "ongoing_conversations", f"{user_id}.txt"), "w", encoding="utf-8"
+                Path(self.valves.save_path, "ongoing_conversations", f"{user_id}.txt"), "w", encoding="utf-8"
             ) as f:
                 f.write(chat_id)
         except FileNotFoundError:
@@ -68,9 +68,9 @@ class Pipeline:
             self._print(f"[ConversationSaver] Failed to write last_archived: {e}")
 
     def get_ongoing_conversation(self) -> str:
+        ongoing_txt = Path(self.valves.save_path, "ongoing_conversation_id.txt")
         try:
-            with open(os.path.join(self.valves.save_path, "ongoing_conversation_id.txt"), "r", encoding="utf-8") as f:
-                return f.read().strip()
+            return ongoing_txt.read_text(encoding="utf-8").strip()
         except FileNotFoundError:
             self._print(f"[ConversationSaver] File not found: {self.valves.save_path}")
             return ""
@@ -102,9 +102,9 @@ class Pipeline:
             self._print("[ConversationSaver] No messages to save")
             return body
 
-        os.makedirs(self.valves.save_path, exist_ok=True)
+        Path(self.valves.save_path).mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-        filename = os.path.join(self.valves.save_path, f"{conversation_id}.{self.valves.extension}")
+        filename = Path(self.valves.save_path, f"{conversation_id}.{self.valves.extension}")
         intro = self.valves.intro_template.format(user=username, model=model)
         self.delete_archived(conversation_id, model)
         try:
