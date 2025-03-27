@@ -18,7 +18,8 @@ def delete_archived():
         try:
             files = [f for f in os.listdir(ARCHIVE_DIR) if os.path.isfile(os.path.join(ARCHIVE_DIR, f))]
             for fname in files:
-                info_chat = get_chat_info(fname.split(".")[0])
+                chat_id = ".".join(fname.split(".")[:-1])
+                info_chat = get_chat_info(chat_id)
                 if info_chat:
                     log(f"✅ Chat {fname} exists! Continue...")
                     continue
@@ -28,7 +29,12 @@ def delete_archived():
                 collection_id = model_collections.get(info.model) or model_collections.get("default")
                 if not collection_id:
                     collection_id = DEFAULT_KNOWLEDGE_ID
-                file_name: str = generate_filename(FILENAME_TEMPLATE, info.model, info.user)
+                file_name: str = generate_filename(
+                    FILENAME_TEMPLATE,
+                    info.model,
+                    info.user,
+                    chat_id,
+                )
                 existing_file = get_existing_file(collection_id, file_name)
                 if existing_file:
                     file_id = existing_file.get("id")

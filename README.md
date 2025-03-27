@@ -1,36 +1,40 @@
 # 🗃 Archivist
 
-**Archivist** is an open-source utility to automatically archive conversations from Open WebUI into a knowledge base (RAG-style). It consists of:
+**Archivist** is an open-source tool that automatically archives conversations from Open WebUI into a long-term memory knowledge base (RAG-style). It includes:
 
-- 🔁 A background Python script (`archivist_loop.py`)
-- 🧠 A pipeline for Open WebUI that saves conversations (`conversation_saver_pipeline.py`)
-- 🐳 A Dockerfile to containerize the background service
-- 🧩 A JSON file to map LLM model names to knowledge base collection IDs
+- 🔁 A background service (`archivist_loop.py`) that uploads and cleans up archived conversations
+- 🧠 A pipeline (`conversation_saver_pipeline.py`) that saves each conversation to file
+- 🐳 A Dockerfile to run the background service in a container
+- 🧩 A `model_collections.json` file to map LLM model names to knowledge base collection IDs
+- 🔐 Optional multi-user API token support via `user_api.json`
 
 ---
 
 ## 🚀 Features
 
-- Saves conversations to files
-- Automatically cleans up `<source_context>` or `<source>` blocks (and also citation between `\[` and `\]`)
-- Maps conversations to the correct knowledge collection based on the model used
-- Updates existing archived files instead of duplicating
-- Logs activity and history in `archivist.log` and `archivist_history.log`
-- Auto-delete the conversation from knowledge (and files) when the conversation is deleted from Open WebUI
+- Saves conversations into `.txt` or `.md` files
+- Automatically removes `<source_context>`, `<source>`, and citations (like `[1]`)
+- Organizes archived files by knowledge collection (optional)
+- Updates existing files instead of duplicating them
+- Tracks active conversations per user to avoid duplicate archiving
+- Supports multiple API tokens (for shared Open WebUI instances)
+- Automatically deletes conversations from the knowledge base when deleted from Open WebUI
+- Logs actions and history (`archivist.log`, `archivist_history.log`)
 
 ---
 
 ## 🗜️ How it works
 
-1. **Pipeline**:
-   - The pipeline saves the conversation to a file in the `memories` directory named `{conversation_id}.{ext}`
-   - It notes the ongoing conversation id into a `ongoing_conversation.txt` file (in the `memories` directory)
-2. **Loop**:
-   - The loop reads the `ongoing_conversation.txt` file to get the conversation id
-   - If the conversation in the folder is not the same id as the one in the `ongoing_conversation.txt`, it will:
-      - Move the file in the `archived` folder
-      - Upload the files and save it in the knowledge base.
-    - If the conversation is deleted from Open WebUI, it will delete the file and the knowledge base entry.
+1. **Pipeline:**
+   - When the user sends a message, the pipeline saves the conversation to `memories/{chat_id}.txt`
+   - The pipeline tracks the current conversation in `memories/ongoing_conversations/{user_id}.txt`
+2. **Loop:**
+   - The loop scans the `memories` folder for finished conversations (i.e., not active anymore)
+   - If a file is not currently ongoing, it:
+     - Moves it to the `archived/{knowledge_id}/` folder (if `archive_per_knowledge` is enabled)
+     - Uploads and indexes it into the corresponding knowledge base
+   - If a chat was deleted, it removes both the file and its knowledge base record
+
 ---
 
 ## 📦 Setup
@@ -38,148 +42,155 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-user/archivist.git
+git clone https://github.com/Mara-Li/OWUI-Archivist.git
 cd archivist
 ```
 
 ### 2. Configure
-- Create an API token in Open WebUI
-- Edit model_collections.json to map your model(s) to their knowledge base collection ID(s)
-- Copy the token into your environnement or `.env` file
 
-### 3. Start with docker compose
+- Create an API token in Open WebUI
+- Edit `model_collections.json` to link each model name to its `knowledge_id`
+
+Optional:
+- If using multiple users, add their tokens in `api.json` like:
+
+```json
+{
+  "default": "admin_token_here",
+  "mara": "user_token_here"
+}
+```
+
+- Set environment variables (or create a `.env` file)
+
+---
+
+### 3. Docker Compose
+
+Add this to your `docker-compose.yml`:
+
 ```yaml
 services:
   open-webui:
-    image: 'ghcr.io/open-webui/open-webui:main' #or cuda
+    image: ghcr.io/open-webui/open-webui:main # or :cuda
     volumes:
-      - './open-webui:/app/backend/data'
-      - './memories:/app/memories' #mandatory!
-    depends_on:
-      - ollama
+      - ./open-webui:/app/backend/data
+      - ./memories:/app/memories  # required!
+    ports:
+      - "8080:8080"
     networks:
       - open-webui
     restart: unless-stopped
-    ports:
-      - '8080:8080'
     container_name: open-webui
+
   ollama:
-    image: 'ollama/ollama:latest'
-    container_name: ollama
+    image: ollama/ollama:latest
     volumes:
-      - '/d/ollama/models:/root/.ollama'
+      - /d/ollama/models:/root/.ollama
+    ports:
+      - "11434:11434"
     networks:
       - open-webui
     restart: unless-stopped
+    container_name: ollama
+
+  archivist:
+    build:
+      context: ./archivist
+      dockerfile: Dockerfile
+    container_name: archivist
+    volumes:
+      - ./memories:/app/memories
+      - ./archivist/model_collections.json:/app/model_collections.json
+      - ./archivist/user_api.json:/app/user_api.json  # optional, for multi-user
+    environment:
+      - WEBUI_API=http://open-webui:8080
+      - WEBUI_TOKEN=your_api_token_here
+      - DEFAULT_KNOWLEDGE_ID=your_default_knowledge_id_here
+    networks:
+      - open-webui
+    depends_on:
+      - open-webui
+    restart: unless-stopped
+
+  pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: pipelines
+    volumes:
+      - ./pipelines:/app/pipelines
+      - ./memories:/app/memories  # required!
     ports:
-      - '11434:11434'
-    archivist:
-      build:
-        context: ./archivist
-        dockerfile: Dockerfile
-      container_name: archivist
-      volumes:
-        - './memories:/app/memories'
-        - './archivist/model_collections.json:/app/model_collections.json'
-      environment:
-        - 'WEBUI_API=http://open-webui:8080'
-        - WEBUI_TOKEN=#ADDYOURAPITOKENHERE!!!!
-        - MEMORY_DIR=/app/memories
-        - COLLECTIONS_FILE=/app/model_collections.json
-        - 'FILENAME_TEMPLATE=Conversation_{date}.md'
-        - DEFAULT_KNOWLEDGE_ID=fb2f8415-3936-4bf9-aebc-846365cd92b5
-      networks:
-        - open-webui
-      depends_on:
-        - open-webui
-      restart: unless-stopped
-    pipelines:
-      image: 'ghcr.io/open-webui/pipelines:main'
-      volumes:
-        - './pipelines:/app/pipelines'
-        - './memories:/app/memories' #mandatory!!
-      restart: unless-stopped
-      networks:
-        - open-webui
-      container_name: pipelines
-      depends_on:
-        - open-webui
-      ports:
-        - '9099:9099'
-      environment:
-        - PIPELINES_REQUIREMENTS_PATH=/app/pipelines/requirements.txt
-        - PIPELINES_API_KEY=0p3n-w3bu!
+      - "9099:9099"
+    environment:
+      - PIPELINES_REQUIREMENTS_PATH=/app/pipelines/requirements.txt
+      - PIPELINES_API_KEY=0p3n-w3bu!
+    networks:
+      - open-webui
+    depends_on:
+      - open-webui
+    restart: unless-stopped
+
 networks:
   open-webui:
     driver: bridge
-
-
 ```
 
-Then launch : `docker compose up -d --build`
+Then run:
 
-> [!WARNING]
-> Don't forget to connect the Pipeline to the Open WebUI in the admin panel.
+```bash
+docker compose up -d --build
+```
 
-## 📁 Generated files
-- `memories/*.{ext}` — stored conversations
-- `memories/archived/` — already archived files
-- `memories/logs/archivist.log` — real-time logs
-- `memories/logs/archivist_history.log` — persistent archive history
+> [!CAUTION] 
+> **Don't forget to enable the pipeline in Open WebUI's admin panel.**
 
-## ⚙️ Customization
+---
 
-### Loop
-You can edit the environment variable to customize the loop behavior:
+## 📁 Files and Structure
 
-- `TIMELOOP` : time between each loop (in seconds)
-- `MEMORY_DIR` : directory where the memories are stored **in the docker**
-- `COLLECTIONS_FILE` : path to the collections json file
-- `DEFAULT_KNOWLEDGE_ID` : default knowledge collection ID
-- `WEBUI_API` : Open WebUI API URL
-- `TOKEN` (mandatory) : Open WebUI API token
-- `FILENAME_TEMPLATE` : template for the filename of the memories
+| Path                                | Description                                      |
+|-------------------------------------|--------------------------------------------------|
+| `memories/*.txt`                    | Current conversation files                       |
+| `memories/archived/<knowledge_id>/`| Archived conversations by collection             |
+| `memories/ongoing_conversations/`  | Tracks current conversation per user             |
+| `memories/logs/archivist.log`      | Real-time logs                                   |
+| `memories/logs/archivist_history.log` | Detailed archive/update history                |
 
-#### Defaults values:
-- `TIMELOOP` : 10
-- `MEMORY_DIR` : `app/memories`
-- `COLLECTIONS_FILE` : `app/model_collections.json`
-- `DEFAULT_KNOWLEDGE_ID` : `None`
-- `WEBUI_API` : `http://localhost:8000`
-- `FILENAME_TEMPLATE` : `conversation_{timestamp}.txt`
-- `ARCHIVE_DIR` : `app/memories/archived`
+---
 
-#### Filename
+## ⚙️ Configuration
 
-> [!NOTE]
-> Define the file name in the knowledge collection.
+### 🌀 Archivist Loop – Environment Variables
 
-Generate a filename based on the template.
-  Allowed value:
-  - `{model}`: the model used in the conversation
-  - `{date}`: the current date
-  - `{time}`: the current time
-  - `{datetime}`: the current datetime (Format: YYYY-MM-DD_HH-MM)
-  - `{user}`: the user name
-  For `{date}`, `{time}` and `{datetime}`, you can change the format with the following syntax:
-  `{date:%d-%m-%Y}`
-  You need to use the [python datetime format](https://strftime.org/)
-<ins>default</ins>: `conversation_{datetime}.txt`
+You can configure Archivist behavior via environment variables in your Docker setup:
 
-### Pipeline
+| Variable                | Description                                                              | Default                           |
+| ----------------------- | ------------------------------------------------------------------------ | --------------------------------- |
+| `WEBUI_TOKEN`           | 🔐 Your Open WebUI API token (**required**)                             | *(none)*                          |
+| `WEBUI_API`             | URL of the Open WebUI API                                                | `http://open-webui:8080`          |
+| `DEFAULT_KNOWLEDGE_ID`  | Fallback knowledge ID if no model collection are set                     | *(optional)*                      |
+| `FILENAME_TEMPLATE`     | Template to name the memory files                                        | `conversation_{datetime}.txt`     |
+| `TIMELOOP`              | Time between each cleanup/upload loop (in seconds)                       | `10`                              |
+| `ARCHIVE_PER_KNOWLEDGE` | Store files in subfolders by `knowledge_id` in `/archived/` (true/false) | `false`                           |
+| `MEMORY_DIR`            | Path to the memory folder in the container                               | `/app/memories`                   |
+| `COLLECTIONS_FILE`      | Path to the json containing the collections ids (in the container)       | `/app/model_collections.json`     |
+| `USERS_API`             | Path to the json containing the differents users api                     | (*optional*) `/app/user_api.json` |
 
-In the **Pipeline** part of the Open Web UI admin panel, you can choose `conversation_saver.py` and edit the parameters:
-- Save path: `/app/memories/`
-  Should be the same as the `MEMORY_DIR` in the loop
-- Archive path: `/app/memories/archived/`
-  Should be the same as the `ARCHIVE_DIR` in the loop
 
-> [!IMPORTANT]
-> The path should be the path in your docker instance, not in your computer.
+### 🧠 Open WebUI Pipeline – Customizable Settings
 
-- Intro template: A template for the introduction of the file, after mandatory information. You can use `{user}` and `{model}` to replace by the user and the model used.
-- Debug: For logging purpose in the docker logs
-- Extension : Choose between `txt` and `md` for the file extension.
+Editable directly from the **Open WebUI admin panel**, under `conversation_saver_pipeline.py`:
 
-> [!CAUTION]
-> The extension should be the same as set in the `FILENAME_TEMPLATE` in the loop.
+| Setting                 | Description                                                        |
+| ----------------------- | ------------------------------------------------------------------ |
+| `save_path`             | Path to save the live conversation files (must match `MEMORY_DIR`) |
+| `archive_path`          | Path to move archived conversations (must match `ARCHIVE_DIR`)     |
+| `intro_template`        | Custom intro text in each file (supports `{user}` and `{model}`)   |
+| `debug`                 | Enable verbose logs in Docker output                               |
+| `extension`             | File format: choose `"md"` or `"txt"`                              |
+| `archive_per_knowledge` | If true, archives are stored in `/archived/{knowledge_id}/`        |
+| `knowledges`            | JSON map of model name → knowledge name (used for folder naming)   |
+
+> [!NOTE] 
+> The file name will always be prefixed with the shortened chat ID (first 8 characters).
+> Example: `[a1b2c3d4] conversation_{datetime}.md`
