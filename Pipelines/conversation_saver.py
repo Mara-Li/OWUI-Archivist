@@ -46,7 +46,7 @@ class Pipeline:
         archive_per_knowledge: bool = Field(default=False, title="Archive conversation per knowledge")
         models_collections_path: str = Field(
             default="/app/model_collections.json",
-            title="JSON of model collections to archive conversation",
+            title="Path to the JSON file for model collections to archive conversation and exclude models",
         )
         ignore_models_not_listed: bool = Field(
             default=False,
@@ -121,8 +121,10 @@ class Pipeline:
         self.knowledges = self.collection_loader.load()
         self._print(f"[ConversationSaver] Loaded model collections: {self.knowledges}")
 
-        if self.valves.ignore_models_not_listed and model not in self.knowledges:
-            self._print(f"[ConversationSaver] Model not listed: {model}")
+        if (self.valves.ignore_models_not_listed and model not in self.knowledges) or (
+            self.knowledges.get(model) and self.knowledges[model].id == "0"
+        ):
+            self._print(f"[ConversationSaver] Model excluded: {model}")
             return body
 
         ongoing_id = self.get_ongoing_conversation()
