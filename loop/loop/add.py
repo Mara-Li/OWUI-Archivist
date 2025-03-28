@@ -2,11 +2,18 @@ import shutil
 import time
 from webui_api import add_to_knowledge, get_chat_info, is_webui_reachable, upload_file
 from config import DEFAULT_KNOWLEDGE_ID, FILENAME_TEMPLATE, MEMORY_DIR, TIMELOOP
-from file_utils import extract_from_file, generate_filename, get_archive_path, load_model_collections, get_ongoing_id
+from file_utils import (
+    ModelCollection,
+    extract_from_file,
+    generate_filename,
+    get_archive_path,
+    load_model_collections,
+    get_ongoing_id,
+)
 from logger import log
 
 
-def run_loop():
+def add_loop():
     log("[Archivist] ✅ Entered loop()")
     model_collections = load_model_collections()
     while True:
@@ -35,13 +42,14 @@ def run_loop():
                     log(f"Chat info not found for {fname}")
                     continue
                 if not collection_id:
-                    collection_id = DEFAULT_KNOWLEDGE_ID or "0"
+                    collection_id = ModelCollection(id=DEFAULT_KNOWLEDGE_ID, name="default")
+                    log(f"Model collection not found for {info.model}. Using default.")
                 file_name: str = generate_filename(FILENAME_TEMPLATE, info.model, info.user, fbasename)
                 file_id = upload_file(fpath, file_name)
                 if file_id:
-                    if add_to_knowledge(file_id, collection_id, file_name, fpath):
+                    if add_to_knowledge(file_id, collection_id.id, file_name, fpath):
                         log(f"Archived {fname} to {collection_id} ({info.model})")
-                        shutil.move(fpath, get_archive_path(fname, collection_id))
+                        shutil.move(fpath, get_archive_path(fname, collection_id.name))
                     else:
                         log(f"Failed to add {fname} to knowledge {collection_id} ({info.model})")
                 else:

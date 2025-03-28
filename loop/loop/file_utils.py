@@ -11,6 +11,7 @@ from logger import log
 from config import ARCHIVE_DIR, ARCHIVE_PER_KNOWLEDGE, COLLECTIONS_FILE, HEADERS, ONGOING_DIR, USERS_API, WEBUI_API
 
 Info = namedtuple("Info", ["model", "user"])
+ModelCollection = namedtuple("ModelCollection", ["id", "name"])
 
 
 def read_file_content(path: Path):
@@ -62,7 +63,8 @@ def load_user_api():
 
 def load_model_collections():
     try:
-        return json.loads(COLLECTIONS_FILE.read_text(encoding="utf-8"))
+        raw = json.loads(COLLECTIONS_FILE.read_text(encoding="utf-8"))
+        return {model: ModelCollection(**values) for model, values in raw.items()}
     except Exception as e:
         log(f"Failed to load model collections: {e}")
         return {}
@@ -132,15 +134,9 @@ def get_knowledge_data(knowledge_id: str):
     return None
 
 
-def get_archive_path(fname: str, knowledge_id: str):
+def get_archive_path(fname: str, knowledge_name: str):
     archive_path = Path(ARCHIVE_DIR, fname)
     if ARCHIVE_PER_KNOWLEDGE:
-        knowledge_data = get_knowledge_data(knowledge_id)
-        if not knowledge_data:
-            raise ValueError(f"Knowledge not found: {knowledge_id}")
-        knowledge_name = knowledge_data.get("name")
-        if not knowledge_name:
-            raise ValueError(f"Knowledge name not found: {knowledge_id}")
         archive_path = Path(ARCHIVE_DIR, knowledge_name, fname)
         knowledge_path = Path(ARCHIVE_DIR, knowledge_name)
         if not knowledge_path.exists():
