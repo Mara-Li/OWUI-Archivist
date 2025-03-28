@@ -37,6 +37,9 @@ def add_loop():
                 info = extract_from_file(fpath)
 
                 collection_id = model_collections.get(info.model) or model_collections.get("default")
+                if collection_id and collection_id.id == "0":
+                    log(f"Excluded model {info.model}.")
+                    continue
                 chat_info = get_chat_info(fbasename)
                 if not chat_info:
                     log(f"Chat info not found for {fname}")

@@ -26,7 +26,6 @@ def get_chat_info(chat_id: str):
 
     # 2. Fallback avec les autres clés utilisateur
     all_user_tokens = load_user_api()
-    print(all_user_tokens)
     for token in all_user_tokens:
         try:
             headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}

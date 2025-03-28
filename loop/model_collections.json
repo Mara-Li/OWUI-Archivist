@@ -1,4 +1,10 @@
 {
-	"model_name": "collection_id",
-	"default": "collection_id"
+	"model_name": {
+		"id": "knowledge_id_here",
+		"name": "knowledge_name_here"
+	},
+	"default": {
+		"id": "knowledge_id_here",
+		"name": "knowledge_name_here"
+	}
 }
