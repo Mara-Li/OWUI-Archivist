@@ -97,17 +97,6 @@ class Pipeline:
         except Exception as e:
             self._print(f"[ConversationSaver] Failed to write last_archived: {e}")
 
-    def get_ongoing_conversation(self) -> str:
-        ongoing_txt = Path(self.valves.save_path, "ongoing_conversation_id.txt")
-        try:
-            return ongoing_txt.read_text(encoding="utf-8").strip()
-        except FileNotFoundError:
-            self._print(f"[ConversationSaver] File not found: {self.valves.save_path}")
-            return ""
-        except Exception as e:
-            self._print(f"[ConversationSaver] Failed to get ongoing conversation id: {e}")
-            return ""
-
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
         text = re.sub(r"<source(_context)?>.*?</source(_context)?>", "", text, flags=re.DOTALL)
@@ -126,12 +115,7 @@ class Pipeline:
         ):
             self._print(f"[ConversationSaver] Model excluded: {model}")
             return body
-
-        ongoing_id = self.get_ongoing_conversation()
         conversation_id = body.get("chat_id") or "unknown"
-        if conversation_id == ongoing_id:
-            self._print("[ConversationSaver] Not need to archive: ongoing conversation")
-            return body
         messages = body.get("messages", [])
         username = (user.get("name") or user.get("email") or "User") if user else "User"
         user_id = user.get("id", "unknow_user_id") if user else "unknow_user_id"
