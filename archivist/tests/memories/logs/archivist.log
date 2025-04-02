@@ -27,3 +27,11 @@
 [2025-04-02 10:23:28] ❌ Chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 not found with any available key
 [2025-04-02 10:23:28] [Notify] Failed to get chat info for 47b87066-9adf-4cbf-9283-44c79dbc6e81
 [2025-04-02 10:23:28] [Notify] No memory file found for missing-id-000 at D:\ArIA\archivist\tests\memories\missing-id-000.md
+[2025-04-02 12:30:07] [Notify] Loading model collections...{"gemma3-tools-4b:latest": ["fb2f8415-3936-4bf9-aebc-846365cd92b5", "Base 2"], "aria": ["d485e8fa-dc4c-46dd-a2f2-2c217d028f03", "Aria - Archive des conversations"], "o1-mini": ["fb2f8415-3936-4bf9-aebc-846365cd92b5", "Base 2"]}
+[2025-04-02 12:30:07] [Notify] Processing archive for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 12:30:09] Error fetching chat with default key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001EC03671A60>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 12:30:12] Error fetching chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 with fallback key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001EC03672840>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 12:30:15] Error fetching chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 with fallback key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001EC036717C0>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 12:30:15] ❌ Chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 not found with any available key
+[2025-04-02 12:30:15] [Notify] Failed to get chat info for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 12:30:15] [Notify] No memory file found for missing-id-000 at D:\ArIA\archivist\tests\memories\missing-id-000.md

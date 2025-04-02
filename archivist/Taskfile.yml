@@ -1,0 +1,27 @@
+version: "3"
+
+env:
+  PYTHONPATH: '{{.USER_WORKING_DIR}}/loop'
+
+tasks:
+  default:
+    desc: Show all available tasks
+    cmds:
+      - task --list
+
+  test:
+    desc: Run all unit tests
+    env:
+      COLLECTIONS_FILE: "{{.USER_WORKING_DIR}}/model_collections.json"
+      MEMORY_DIR: "{{.USER_WORKING_DIR}}/tests/memories"
+      FILENAME_TEMPLATE: 'conversation_{date}.md'
+      USERS_API: "{{.USER_WORKING_DIR}}/tests/user_api.json"
+    cmds:
+      - echo ${PYTHONPATH}
+      - echo "Running all tests..."
+      - python -m unittest discover tests
+
+  test:single:
+    desc: Run a single test file
+    cmds:
+      - python -m unittest tests.{{.CLI_ARGS}}

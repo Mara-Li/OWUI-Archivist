@@ -17,7 +17,7 @@ os.environ["COLLECTIONS_FILE"] = str(PROJECT_ROOT / "model_collections.json")
 os.environ["FILENAME_TEMPLATE"] = "conversation_{date}.md"
 os.environ["USERS_API"] = str(PROJECT_ROOT / "user_api.json")
 
-from loop.add import app  # noqa: E402
+from src.add import app  # noqa: E402
 
 client = TestClient(app)
 
