@@ -1,0 +1,29 @@
+[2025-04-02 10:05:07] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:05:07] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:06:13] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:06:13] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:12:17] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:12:17] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:13:13] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:13:13] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:14:04] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:14:04] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:16:57] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:16:57] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:18:26] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:18:26] [Notify] No memory file found for missing-id-000
+[2025-04-02 10:19:42] [Notify] No memory file found for 47b87066-9adf-4cbf-9283-44c79dbc6e81 at D:\ArIA\archivist\tests\memories\47b87066-9adf-4cbf-9283-44c79dbc6e81..md
+[2025-04-02 10:19:42] [Notify] No memory file found for missing-id-000 at D:\ArIA\archivist\tests\memories\missing-id-000..md
+[2025-04-02 10:20:28] [Notify] Processing archive for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:20:30] Error fetching chat with default key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000002C9C80AE150>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 10:20:30] Failed to load user API: [Errno 2] No such file or directory: '\\app\\user_api.json'
+[2025-04-02 10:20:30] ❌ Chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 not found with any available key
+[2025-04-02 10:20:30] [Notify] Failed to get chat info for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:20:30] [Notify] No memory file found for missing-id-000 at D:\ArIA\archivist\tests\memories\missing-id-000.md
+[2025-04-02 10:23:20] [Notify] Processing archive for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:23:23] Error fetching chat with default key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001CFFF7B2480>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 10:23:26] Error fetching chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 with fallback key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001CFFF81EAB0>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 10:23:28] Error fetching chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 with fallback key: HTTPConnectionPool(host='open-webui', port=8080): Max retries exceeded with url: /api/v1/chats/47b87066-9adf-4cbf-9283-44c79dbc6e81 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0x000001CFFF81D8E0>: Failed to resolve 'open-webui' ([Errno 11001] getaddrinfo failed)"))
+[2025-04-02 10:23:28] ❌ Chat 47b87066-9adf-4cbf-9283-44c79dbc6e81 not found with any available key
+[2025-04-02 10:23:28] [Notify] Failed to get chat info for 47b87066-9adf-4cbf-9283-44c79dbc6e81
+[2025-04-02 10:23:28] [Notify] No memory file found for missing-id-000 at D:\ArIA\archivist\tests\memories\missing-id-000.md
