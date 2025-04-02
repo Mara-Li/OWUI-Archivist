@@ -13,10 +13,9 @@ ARCHIVE_PER_KNOWLEDGE = os.getenv("ARCHIVE_PER_KNOWLEDGE", "false").lower() == "
 MEMORY_DIR = Path(os.getenv("MEMORY_DIR", "/app/memory"))
 COLLECTIONS_FILE = Path(os.getenv("COLLECTIONS_FILE", "/app/model_collections.json"))
 USERS_API = Path(os.getenv("USERS_API", "/app/user_api.json"))
+ARCHIVE_CACHE_FILE = Path(MEMORY_DIR) / "archived_ids.json"
 
 # --- Path
-ONGOING_ID = Path(MEMORY_DIR, "ongoing_conversation_id.txt")
-ONGOING_DIR = Path(MEMORY_DIR, "ongoing_conversations")
 ARCHIVE_DIR = Path(MEMORY_DIR, "archived")
 LOG_DIR = Path(MEMORY_DIR, "logs")
 LOG_FILE = Path(LOG_DIR, "archivist.log")

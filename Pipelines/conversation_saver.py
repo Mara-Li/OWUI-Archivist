@@ -5,15 +5,57 @@ import re
 from typing import Literal, Optional, List
 from datetime import datetime
 from pydantic import BaseModel, Field
+import requests
 
 ModelCollection = namedtuple("ModelCollection", ["id", "name"])
+
+
+class OngoingConversation(BaseModel):
+    chat_id: str
+    model: str
+    username: str
+
+
+class OngoingConversationTracker:
+    def __init__(self, base_path: Path):
+        self.base_path = base_path
+        self.cache: dict[str, OngoingConversation] = {}
+        self.mtimes = {}
+
+    def get(self, user_id: str) -> Optional[OngoingConversation]:
+        path = self.base_path / f"{user_id}.json"
+        try:
+            if path.exists():
+                mtime = path.stat().st_mtime
+                if user_id not in self.mtimes or self.mtimes[user_id] != mtime:
+                    data = json.loads(path.read_text(encoding="utf-8"))
+                    self.cache[user_id] = OngoingConversation(**data)
+                    self.mtimes[user_id] = mtime
+            return self.cache.get(user_id)
+        except Exception as e:
+            print(f"[OngoingTracker] Failed to load {user_id}: {e}")
+            return None
+
+    def set(self, user_id: str, data: OngoingConversation) -> Optional[OngoingConversation]:
+        path = self.base_path / f"{user_id}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        existing = self.get(user_id)
+        if existing != data:
+            try:
+                path.write_text(data.model_dump_json(indent=2), encoding="utf-8")
+                self.cache[user_id] = data
+                self.mtimes[user_id] = path.stat().st_mtime
+                print(f"[OngoingTracker] Updated for {user_id}: {data}")
+            except Exception as e:
+                print(f"[OngoingTracker] Failed to write {user_id}: {e}")
+        return existing
 
 
 class CollectionLoader:
     def __init__(self, path: str):
         self.path = Path(path)
         self.last_mtime = 0
-        self.cache = {}
+        self.cache: dict[str, ModelCollection] = {}
 
     def load(self):
         try:
@@ -52,6 +94,10 @@ class Pipeline:
             default=False,
             title="Ignore models not listed in the model collections files",
         )
+        notify_url: str = Field(
+            default="http://archivist:9000/notify",
+            title="URL to notify when a conversation is saved",
+        )
 
     def delete_archived(self, chat_id: str, model_name: str):
         archived_path = Path(self.valves.archive_path, f"{chat_id}.{self.valves.extension}")
@@ -74,6 +120,7 @@ class Pipeline:
         self.name = "Conversation Saver Pipeline"
         self.valves = self.Valves()
         self.collection_loader = CollectionLoader(self.valves.models_collections_path)
+        self.ongoing_tracker = OngoingConversationTracker(Path(self.valves.save_path, "ongoing_conversations"))
         self._print("[ConversationSaver] Initialized")
 
     def _print(self, *msg: object):
@@ -85,17 +132,6 @@ class Pipeline:
 
     async def on_shutdown(self):
         self._print("[ConversationSaver] on_shutdown")
-
-    def write_last_archived(self, chat_id: str, user_id: str = ""):
-        try:
-            with open(
-                Path(self.valves.save_path, "ongoing_conversations", f"{user_id}.txt"), "w", encoding="utf-8"
-            ) as f:
-                f.write(chat_id)
-        except FileNotFoundError:
-            self._print(f"[ConversationSaver] File not found: {self.valves.save_path}")
-        except Exception as e:
-            self._print(f"[ConversationSaver] Failed to write last_archived: {e}")
 
     def clean_content(self, text: str) -> str:
         # Supprimer les balises <source_context> et <source> ainsi que leur contenu
@@ -146,8 +182,27 @@ class Pipeline:
                         continue
                     speaker = username if role == "user" else role.capitalize()
                     f.write(f"**{speaker}**: {content}\n\n")
-            self.write_last_archived(conversation_id, user_id)
+            data_to_update = OngoingConversation(
+                chat_id=conversation_id,
+                model=model,
+                username=username,
+            )
+            previous = self.ongoing_tracker.set(
+                user_id,
+                data_to_update,
+            )
             self._print(f"[ConversationSaver] Saved to {filename}")
+            self._print(f"[ConversationSaver] Ongoing conversation updated: {previous}")
+            if self.valves.notify_url and previous and previous.chat_id != conversation_id:
+                requests.post(
+                    self.valves.notify_url,
+                    json={
+                        "chat_id": previous.chat_id,
+                        "user_id": user_id,
+                        "username": previous.username,
+                        "model": previous.model,
+                    },
+                )
         except Exception as e:
             self._print(f"[ConversationSaver] Failed to write file: {e}")
         return body

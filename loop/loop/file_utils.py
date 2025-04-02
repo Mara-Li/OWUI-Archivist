@@ -8,7 +8,7 @@ import re
 import requests
 from logger import log
 
-from config import ARCHIVE_DIR, ARCHIVE_PER_KNOWLEDGE, COLLECTIONS_FILE, HEADERS, ONGOING_DIR, USERS_API, WEBUI_API
+from config import ARCHIVE_DIR, ARCHIVE_PER_KNOWLEDGE, COLLECTIONS_FILE, HEADERS, USERS_API, WEBUI_API
 
 Info = namedtuple("Info", ["model", "user"])
 ModelCollection = namedtuple("ModelCollection", ["id", "name"])
@@ -20,19 +20,6 @@ def read_file_content(path: Path):
     except Exception as e:
         log(f"Error reading file content: {e}")
     return ""
-
-
-def get_ongoing_id():
-    ids = set()
-    try:
-        for path in ONGOING_DIR.glob("*.txt"):
-            if path.is_file():
-                chat_id = path.read_text(encoding="utf-8").strip()
-                if chat_id:
-                    ids.add(chat_id)
-    except Exception as e:
-        log(f"[Ongoing] Failed to list ongoing chat IDs: {e}")
-    return ids
 
 
 def extract_from_file(file_path: Path) -> Info:
